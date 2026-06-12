@@ -1,108 +1,149 @@
-'use client';
-
-import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
-import { FiMail, FiLock } from 'react-icons/fi';
-
-interface LoginFormData {
-  email: string;
-  password: string;
-}
-
-type User = {
-  name: string;
-  email: string;
-  role: string;
-  token: string;
-};
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Login() {
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const onSubmit = async (data: LoginFormData) => {
-    // API_Add_Here: Replace with actual login API call
-    // This mock user should come from your API response
-    const mockUser: User = {
-      name: "Test User",
-      email: data.email,
-      role: "user", // This should come from API response
-      token: 'mock-token'
-    };
 
-    // For demo purpose - hardcode admin user
-    if (data.email === 'admin@example.com') {
-      mockUser.role = 'admin';
-    }
-    
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    
-    if (mockUser.role === 'admin') {
-      router.push('/dashboard');
+const handleSubmit = async (e:any) => {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: form.email,
+        password: form.password,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      router.push("/dashboard"); // No localStorage needed (cookie-based auth)
     } else {
-      router.push('/');
+      alert(data.message);
     }
+  } catch (error) {
+    alert("Something went wrong");
+  }
+
+  setLoading(false);
+};
+
+
+  const handleGoogleLogin = () => {
+    // If using NextAuth
+    window.location.href = "/api/auth/signin/google";
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 text-zinc-900">
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-8 rounded-lg shadow-md w-96">
-        <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
+    <div className="min-h-screen flex flex-col md:flex-row">
 
-        <div className="mb-4">
-          <label className="flex items-center mb-2">
-            <FiMail className="mr-2" /> Email
-          </label>
-          <input 
-            type="email" 
-            {...register('email', { 
-              required: 'Email is required',
-              pattern: {
-                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                message: 'Invalid email address'
-              }
-            })} 
-            className="w-full p-2 border rounded"
-          />
-          {errors.email && <span className="text-red-500 text-sm">{errors.email.message}</span>}
+      {/* LEFT SIDE - Welcome */}
+      <div className="w-full md:w-1/2 bg-blue-700 text-white flex items-center justify-center px-8 py-16">
+        <div className="max-w-md text-center md:text-left">
+          <h1 className="text-3xl md:text-4xl font-bold mb-6">
+            Welcome to Telco Brush Ware
+          </h1>
+
+          <p className="text-base md:text-lg leading-relaxed">
+           Telco Brush Ware provides premium paint accessories and professional
+            tools designed for durability and superior finishing.
+            Login to access your secure business dashboard.
+          </p>
+
+          <div className="mt-8 text-sm opacity-80">
+            Trusted Quality • Secure Access • Professional Service
+          </div>
         </div>
+      </div>
 
-        <div className="mb-6">
-          <label className="flex items-center mb-2">
-            <FiLock className="mr-2" /> Password
-          </label>
-          <input 
-            type="password" 
-            {...register('password', { 
-              required: 'Password is required',
-              minLength: {
-                value: 6,
-                message: 'Password must be at least 6 characters'
+      {/* RIGHT SIDE - Login */}
+      <div className="w-full md:w-1/2 bg-gray-50 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl">
+
+          <h2 className="text-2xl font-bold mb-2 text-gray-800">
+            Login in to your account
+          </h2>
+
+          <p className="text-gray-500 mb-6 text-sm">
+            Enter your credentials to continue
+          </p>
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+
+            <input
+              type="email"
+              placeholder="Email Address"
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
               }
-            })} 
-            className="w-full p-2 border rounded"
-          />
-          {errors.password && <span className="text-red-500 text-sm">{errors.password.message}</span>}
-        </div>
+            />
 
-        <button 
-          type="submit" 
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition-colors"
-        >
-          Login
-        </button>
+            <input
+              type="password"
+              placeholder="Password"
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              onChange={(e) =>
+                setForm({ ...form, password: e.target.value })
+              }
+            />
 
-        <p className="mt-4 text-center">
-          Don't have an account?{' '}
-          <button 
-            type="button"
-            onClick={() => router.push('/signup')}
-            className="text-blue-500 hover:underline"
+            {/* Forgot Password */}
+            <div className="text-right">
+              <a
+                href="/signup" // Change to actual forgot password route
+                className="text-sm text-blue-600 hover:underline"
+              >
+                signup
+              </a>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-700 text-white py-3 rounded-lg hover:bg-blue-800 transition font-semibold disabled:opacity-60"
+            >
+              {loading ? "Signing in..." : "Login"}
+            </button>
+
+          </form>
+
+          {/* Divider */}
+          <div className="flex items-center my-6">
+            <div className="flex-1 border-t"></div>
+            <span className="px-3 text-sm text-gray-400">OR</span>
+            <div className="flex-1 border-t"></div>
+          </div>
+
+          {/* Google Login */}
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full flex items-center justify-center gap-3 border border-gray-300 py-3 rounded-lg hover:bg-gray-100 transition"
           >
-            Sign up here
+            <img
+              src="https://www.svgrepo.com/show/475656/google-color.svg"
+              alt="Google"
+              className="w-5 h-5"
+            />
+            <span className="text-gray-700 font-medium">
+              Continue with Google
+            </span>
           </button>
-        </p>
-      </form>
+
+        </div>
+      </div>
+
     </div>
   );
 }
